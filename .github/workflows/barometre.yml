@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # déclenche le redéploiement du dashboard après le commit
 
 concurrency:
   group: barometre
@@ -63,6 +64,14 @@ jobs:
           fi
           git commit -m "Relevé baromètre $(date -u +%Y-%m)"
           git push
+
+      - name: Redéployer le dashboard
+        # Un push fait avec GITHUB_TOKEN ne déclenche pas les workflows en
+        # aval (garde anti-récursion GitHub) : on dispatche explicitement.
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main || echo "Pages non déployé (workflow absent ?)"
 
       - name: Résumé
         if: always()
